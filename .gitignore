@@ -1,0 +1,20 @@
+# Сборка и артефакты
+[Bb]in/
+[Oo]bj/
+[Dd]ist/
+.vs/
+*.user
+*.suo
+
+# Логи сборки (build-check.bat и скрипты пишут их рядом с проектом)
+*.log
+
+# Локальные данные и секреты. Панель держит их в %LocalAppData%\ForgePanelV2,
+# но любой запуск из bin\ может создать файл в рабочей папке — в репозиторий
+# он попасть не должен ни при каком раскладе.
+settings.json
+window.json
+servers.json
+servers.json.bak
+servers.json.broken-*
+crash.log

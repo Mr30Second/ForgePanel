@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ForgePanel</AssemblyName>
+    <RootNamespace>ForgePanel</RootNamespace>
+    <!-- Значок самого .exe в Проводнике. Только .ico: Win32 не берёт PNG для этого места.
+         Файл собран из app-icon.png (7 размеров, PNG-записи — формат, понятный Vista и новее). -->
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Картинка в шапке и иконка окна берутся из сборки как ресурс, чтобы панель работала
+       и когда рядом с .exe нет папки Assets. DecodePixelWidth в разметке не даёт
+       разворачивать её в память целиком ради квадрата 19 пикселей. -->
+  <ItemGroup>
+    <Resource Include="Assets\app-icon.png" />
+  </ItemGroup>
+
+  <!-- Нужен только для декодирования WebP: у WPF жёсткий список встроенных кодеков
+       (PNG/JPEG/GIF/BMP/TIFF/ICO), а иконки Modrinth в основном WebP. Версия 4.153.1
+       для net8.0-windows берёт группу net6.0, в неё уже входит NativeAssets.Win32. -->
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.153.1" />
+  </ItemGroup>
+</Project>

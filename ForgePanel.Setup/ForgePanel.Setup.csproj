@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Мастер ставится на net472: этот framework уже встроен в Windows 10 и 11, поэтому
+         сам .exe весит около 20 КБ, а пользователю не нужен ни .NET 8, ни dotnet-install.
+         Payload панели при этом остаётся self-contained на .NET 8 — он лежит внутри этого же
+         файла как zip и распаковывается при установке. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>ForgePanel-Setup</AssemblyName>
+    <RootNamespace>ForgePanel.Setup</RootNamespace>
+    <ApplicationIcon>Assets\setup-icon.ico</ApplicationIcon>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>ForgePanel</Product>
+    <Company>ForgePanel</Company>
+    <!-- Символы мастеру не нужны, а без этой строки в bin кладётся .pdb. -->
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- WPF и WinForms подключаются прямой ссылкой: UseWPF включал бы XAML-конвейер,
+       а разметка в мастере пишется кодом (один файл — одно окно, без .xaml). -->
+  <ItemGroup>
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+</Project>

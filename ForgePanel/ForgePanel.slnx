@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ForgePanel.csproj" />
+  <!-- Мастер установки: отдельный проект на net472 (он же и деинсталлятор). Сборка панели
+       его не трогает — payload подкладывается скриптом scripts\make-setup.ps1. -->
+  <Project Path="..\ForgePanel.Setup\ForgePanel.Setup.csproj" />
+</Solution>

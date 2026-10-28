@@ -1,0 +1,426 @@
+<Application x:Class="ForgePanel.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:ForgePanel" StartupUri="MainWindow.xaml">
+  <Application.Resources>
+    <!-- Палитра. Тема одна — тёмная, её значения переписаны с макета; акцент выбирается в
+         «Настройках», и Theme.Apply() меняет Color у этих же кистей на лету: кисти не заморожены,
+         и все, кто на них ссылается (в том числе StaticResource внутри шаблонов), перекрашиваются
+         сами. Поэтому в разметке и в коде не должно оставаться цветов, записанных числом, — иначе
+         они переключения акцента не увидят. Значения акцентов держит Theme.cs. -->
+    <SolidColorBrush x:Key="Bg" Color="#0B0D12"/>
+    <SolidColorBrush x:Key="Panel" Color="#14171E"/>
+    <SolidColorBrush x:Key="Panel2" Color="#1B1F29"/>
+    <SolidColorBrush x:Key="Line" Color="#2A2F3A"/>
+    <SolidColorBrush x:Key="Muted" Color="#8290A8"/>
+    <SolidColorBrush x:Key="Text" Color="#F4F5FA"/>
+    <SolidColorBrush x:Key="Accent" Color="#3B82F6"/>
+    <SolidColorBrush x:Key="AccentLine" Color="#2B6CB8"/>
+    <SolidColorBrush x:Key="AccentText" Color="#93C5FD"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#60A5FA"/>
+    <SolidColorBrush x:Key="AccentSoftBg" Color="#16263F"/>
+    <SolidColorBrush x:Key="AccentSoftLine" Color="#2F5FA8"/>
+    <SolidColorBrush x:Key="Hover" Color="#1B2434"/>
+    <SolidColorBrush x:Key="Pressed" Color="#223A5C"/>
+    <SolidColorBrush x:Key="FieldBg" Color="#101319"/>
+    <SolidColorBrush x:Key="HeaderBg" Color="#11141B"/>
+    <SolidColorBrush x:Key="ToolbarBg" Color="#0F1218"/>
+    <SolidColorBrush x:Key="SearchBg" Color="#181C26"/>
+    <SolidColorBrush x:Key="SearchLine" Color="#303747"/>
+    <SolidColorBrush x:Key="FrameLine" Color="#252A34"/>
+    <SolidColorBrush x:Key="Ok" Color="#4ADE80"/>
+    <SolidColorBrush x:Key="Warn" Color="#FBBF24"/>
+    <!-- Текст, который лежит НА акцентной плашке (выбранная кнопка меню, «Сохранить»). Обычный
+         Text на ярком акценте не читается, поэтому цвет задан отдельно и свой для каждого акцента. -->
+    <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF"/>
+    <FontFamily x:Key="IconFont">Segoe MDL2 Assets</FontFamily>
+
+    <!-- Шрифт задаётся явно в каждом стиле: без этого поля ввода наследуют системный шрифт
+         управления, а подписи рисуются Segoe UI, и текст в строках выглядит чужим. -->
+    <Style TargetType="{x:Type Button}">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="Background" Value="{StaticResource Panel2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="14,9"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Button}">
+            <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="b" Property="Background" Value="{StaticResource Hover}"/>
+                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentLine}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="b" Property="Background" Value="{StaticResource Pressed}"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="b" Property="Opacity" Value="0.45"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Отступ рисует Border, а PART_ContentHost растягивается на всю высоту поля.
+         VerticalScrollBarVisibility=Disabled обязателен: Hidden только прячет полосу, но прокрутку
+         оставляет, и колесо мыши сдвигало строку вверх — верх букв обрезался. Горизонталь оставляем
+         Hidden (иначе каретка не выходила бы на экран при наборе длинного текста), а прокрутку
+         колесом и свайпом тачпада гасит PreviewMouseWheel в стиле ниже. -->
+    <!-- Placeholder: в WPF у TextBox его нет, поэтому в шаблоне лежит отдельная подпись, которая
+         берёт текст из прикреплённого свойства Placeholder.Text и показывается, пока поле пусто
+         и не в фокусе (в фокусе каретка встала бы на её первую букву).
+         IsHitTestVisible=False — чтобы клик проходил в поле, а не в надпись. -->
+    <Style TargetType="{x:Type TextBox}">
+      <EventSetter Event="PreviewMouseWheel" Handler="TextBoxField_PreviewMouseWheel"/>
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="Background" Value="{StaticResource FieldBg}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <!-- Текст придвинут к левому краю поля: 10px выглядели как лишняя пустота. Поиск в шапке
+           (GlobalSearch) задаёт свой Padding локально, его эта правка не касается. -->
+      <Setter Property="Padding" Value="7,6"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="CaretBrush" Value="{StaticResource Accent}"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <!-- Значение держит шаблон: поле в одну строку не прокручивается вовсе. Журнал консоли
+         переопределяет его локально на Auto, им-то прокрутка нужна. -->
+      <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type TextBox}">
+            <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <Grid>
+                <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Foreground="{TemplateBinding Foreground}" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"/>
+                <TextBlock x:Name="hint"
+                           Text="{Binding (local:Placeholder.Text), RelativeSource={RelativeSource TemplatedParent}}"
+                           Foreground="{StaticResource Muted}"
+                           FontSize="{TemplateBinding FontSize}"
+                           FontFamily="{TemplateBinding FontFamily}"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           IsHitTestVisible="False"
+                           Visibility="Collapsed"/>
+              </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+              <!-- Каретка в пустом поле стоит на нулевом символе, то есть ровно поверх первой
+                   буквы подсказки. Поэтому водалик показываем только пока поле не в фокусе. -->
+              <MultiTrigger>
+                <MultiTrigger.Conditions>
+                  <Condition Property="Text" Value=""/>
+                  <Condition Property="IsKeyboardFocused" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="hint" Property="Visibility" Value="Visible"/>
+              </MultiTrigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource AccentLine}"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="b" Property="Opacity" Value="0.45"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ComboBoxItem}">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="10,7"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+            <Border x:Name="item" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="1"
+                    CornerRadius="7" Margin="4,2" Padding="{TemplateBinding Padding}">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="item" Property="Background" Value="{StaticResource Hover}"/>
+                <Setter TargetName="item" Property="BorderBrush" Value="{StaticResource AccentLine}"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="item" Property="Background" Value="{StaticResource Pressed}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Системный шаблон ComboBox не берёт цвета из стиля, поэтому шаблон свой.
+         SelectedItem выводится ContentPresenter'ом вне ToggleButton: иначе текст наследует
+         системный цвет текста кнопки и на тёмном фоне становится нечитаемым. -->
+    <Style TargetType="{x:Type ComboBox}">
+      <Setter Property="FontFamily" Value="Segoe UI"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="Background" Value="{StaticResource Panel2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="10,7"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="MaxDropDownHeight" Value="360"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ComboBox}">
+            <Grid>
+              <ToggleButton x:Name="toggle" Focusable="False" ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="box" Background="{StaticResource Panel2}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="9">
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="32"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="1" Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                   Foreground="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AccentLine}"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+
+              <ContentPresenter x:Name="selection" IsHitTestVisible="False" Margin="{TemplateBinding Padding}"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+              <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed" IsReadOnly="{TemplateBinding IsReadOnly}"
+                       local:Placeholder.Text="{Binding (local:Placeholder.Text), RelativeSource={RelativeSource TemplatedParent}}"
+                       Background="Transparent" BorderThickness="0" Padding="0" Margin="10,0,34,0" Cursor="IBeam"
+                       Foreground="{TemplateBinding Foreground}" CaretBrush="{StaticResource Accent}"
+                       VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+
+              <Popup x:Name="PART_Popup" AllowsTransparency="True" Placement="Bottom" Focusable="False"
+                     IsOpen="{TemplateBinding IsDropDownOpen}" PopupAnimation="Fade">
+                <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="9"
+                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Margin="0,4,0,0">
+                  <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}" VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter/>
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsEditable" Value="True">
+                <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="selection" Property="Visibility" Value="Hidden"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.45"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Полоса прогресса: системный шаблон даёт светлый фон, поэтому свой. -->
+    <Style TargetType="{x:Type ProgressBar}">
+      <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+      <Setter Property="Background" Value="{StaticResource Panel2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="Height" Value="12"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ProgressBar}">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6">
+              <Grid ClipToBounds="True">
+                <Rectangle x:Name="PART_Track"/>
+                <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="6" HorizontalAlignment="Left"/>
+              </Grid>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SliderHitArea" TargetType="{x:Type RepeatButton}">
+      <Setter Property="OverridesDefaultStyle" Value="True"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type RepeatButton}">
+            <Border Background="{TemplateBinding Background}"/>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Заполненная часть полосы рисуется самой левым RepeatButton: Track сам считает его ширину.
+         Кликабельная зона остаётся высотой с ползунок, видна только полоса в 6px. -->
+    <Style x:Key="SliderFillArea" TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource SliderHitArea}">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type RepeatButton}">
+            <Border Background="Transparent">
+              <Border Height="6" CornerRadius="3" Background="{StaticResource Accent}" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SliderThumbStyle" TargetType="{x:Type Thumb}">
+      <Setter Property="OverridesDefaultStyle" Value="True"/>
+      <Setter Property="Width" Value="18"/>
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Thumb}">
+            <Grid>
+              <Ellipse x:Name="outer" Fill="{StaticResource Accent}"/>
+              <Ellipse x:Name="inner" Fill="{StaticResource Pressed}" Margin="5"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="outer" Property="Fill" Value="{StaticResource AccentText}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Slider}">
+      <Setter Property="MinHeight" Value="28"/>
+      <Setter Property="Focusable" Value="True"/>
+      <Setter Property="IsSnapToTickEnabled" Value="True"/>
+      <Setter Property="TickFrequency" Value="1"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Slider}">
+            <Grid VerticalAlignment="Center">
+              <Border Height="6" CornerRadius="3" Background="{StaticResource Panel2}" BorderBrush="{StaticResource Line}" BorderThickness="1" VerticalAlignment="Center"/>
+              <Track x:Name="PART_Track" VerticalAlignment="Center">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource SliderFillArea}" Command="{x:Static Slider.DecreaseLarge}"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Style="{StaticResource SliderThumbStyle}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource SliderHitArea}" Command="{x:Static Slider.IncreaseLarge}"/>
+                </Track.IncreaseRepeatButton>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <!-- Системная полоса прокрутки — серая и объёмная: на тёмном фоне она выглядит чужой и
+         перетягивает взгляд на себя (консоль и страницы скроллятся постоянно). Здесь тонкая
+         тёмная полоса без стрелок: колесо, перетаскивание и клик по треку остаются. -->
+    <Style x:Key="ScrollPage" TargetType="{x:Type RepeatButton}">
+      <Setter Property="OverridesDefaultStyle" Value="True"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type RepeatButton}">
+            <Border Background="{TemplateBinding Background}"/>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ScrollThumb" TargetType="{x:Type Thumb}">
+      <Setter Property="OverridesDefaultStyle" Value="True"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Thumb}">
+            <Border x:Name="t" CornerRadius="4" Margin="2,3" Background="{StaticResource Line}"/>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="t" Property="Background" Value="{StaticResource AccentLine}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ScrollBar}">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Width" Value="12"/>
+      <Setter Property="MinWidth" Value="12"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ScrollBar}">
+            <Grid Background="{TemplateBinding Background}">
+              <Track x:Name="PART_Track" IsDirectionReversed="True" ViewportSize="{TemplateBinding ViewportSize}">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Style="{StaticResource ScrollPage}"/>
+                </Track.DecreaseRepeatButton>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" Style="{StaticResource ScrollPage}"/>
+                </Track.IncreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Style="{StaticResource ScrollThumb}"/>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="Orientation" Value="Horizontal">
+          <Setter Property="Width" Value="Auto"/>
+          <Setter Property="MinWidth" Value="0"/>
+          <Setter Property="Height" Value="12"/>
+          <Setter Property="MinHeight" Value="12"/>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="{x:Type ScrollBar}">
+                <Grid Background="{TemplateBinding Background}">
+                  <Track x:Name="PART_Track" IsDirectionReversed="False" ViewportSize="{TemplateBinding ViewportSize}">
+                    <Track.DecreaseRepeatButton>
+                      <RepeatButton Command="{x:Static ScrollBar.PageLeftCommand}" Style="{StaticResource ScrollPage}"/>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                      <RepeatButton Command="{x:Static ScrollBar.PageRightCommand}" Style="{StaticResource ScrollPage}"/>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                      <Thumb Style="{StaticResource ScrollThumb}"/>
+                    </Track.Thumb>
+                  </Track>
+                </Grid>
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+  </Application.Resources>
+</Application>
