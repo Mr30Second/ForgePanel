@@ -4448,7 +4448,7 @@ public partial class MainWindow : Window
             "you@mail.com или https://modrinth.com/...");
         form.Children.Add(Txt("Modrinth требует, чтобы лаунчер представился: заголовок User-Agent вида «ForgePanel/2.0 (твой контакт)». Без нормального User-Agent API отвечает 403.", 11, false, (Brush)FindResource("Muted")));
 
-        var account = Field(form, "Имя локального профиля", settings.AccountName, "например, Alex");
+        var account = Field(form, "Имя локального профиля", settings.AccountName, "например, Steve");
         form.Children.Add(HintCard("Что такое локальный профиль",
             "Имя показывается внизу левого меню и помогает понять, чья это сборка, если за компьютером работают несколько человек.",
             "Это не аккаунт Mojang или Microsoft: пароля здесь нет и быть не может — ForgePanel работает офлайн и никуда ничего не отправляет.",

@@ -59,7 +59,7 @@ namespace ForgePanel.Setup
         }
 
         // Деинсталлятор вызывается через cmd-строку, поэтому путь в кавычках обязателен:
-        // без них папка с пробелом («C:\Users\Alex Ivan\...») развалится на два аргумента.
+        // без них папка с пробелом («C:\Users\Example User\...») развалится на два аргумента.
         private static string Quote(string path) => "\"" + path + "\"";
 
         private static long SizeOf(string dir)
